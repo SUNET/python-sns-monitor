@@ -20,7 +20,6 @@ class MessageType(str, Enum):
 class SNSMessage(BaseModel):
     class Config:
         arbitrary_types_allowed = True
-        use_enum_values = True
 
     type: MessageType = Field(alias='Type')
     timestamp: datetime = Field(alias='Timestamp')
