@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
-from unittest import TestCase
+import os
+from typing import Optional
+from unittest import TestCase, mock
 
+import pkg_resources
 from starlette.testclient import TestClient
 
 from sns_monitor.api import app
@@ -9,8 +12,29 @@ from sns_monitor.api import app
 __author__ = 'lundberg'
 
 
+class MockResponse:
+    def __init__(self, content: bytes = b'', json_data: Optional[dict] = None, status_code: int = 200):
+        self._content = content
+        self._json_data = json_data
+        self._status_code = status_code
+
+    @property
+    def content(self):
+        return self._content
+
+    @property
+    def json(self):
+        return self._json_data
+
+    def raise_for_status(self):
+        pass
+
+
 class TestApp(TestCase):
     def setUp(self) -> None:
+        self.datadir = pkg_resources.resource_filename(__name__, 'data')
+        with open(f'{self.datadir}{os.sep}test.crt', mode='rb') as f:
+            self.cert_bytes = f.read()
         # Headers and body from AWS documentation
         self.headers = {
             'x-amz-sns-message-type': 'Notification',
@@ -19,7 +43,7 @@ class TestApp(TestCase):
             'x-amz-sns-subscription-arn': 'arn:aws:sns:us-west-2:123456789012:MyTopic:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55',
             'Content-Type': 'text/plain; charset=UTF-8',
         }
-        self.body_test = {
+        self.body = {
             'Type': 'Notification',
             'MessageId': 'da41e39f-ea4d-435a-b922-c6aae3915ebe',
             'TopicArn': 'arn:aws:sns:us-west-2:123456789012:MyTopic',
@@ -27,24 +51,16 @@ class TestApp(TestCase):
             'Message': 'test message',
             'Timestamp': '2012-04-25T21:49:25.719Z',
             'SignatureVersion': '1',
-            'Signature': 'EXAMPLElDMXvB8r9R83tGoNn0ecwd5UjllzsvSvbItzfaMpN2nk5HVSw7XnOn/49IkxDKz8YrlH2qJXj2iZB0Zo2O71c4qQk1fMUDi3LGpij7RCW7AW9vYYsSqIKRnFS94ilu7NFhUzLiieYr4BKHpdTmdD6c0esKEYBpabxDSc=',
+            'Signature': 'KsQfz4uV9wgpzkHWTzcG6RG1FbyZKk0pFm1hmJ76HCleXhARkLJkUyq4gD8vF19m9zVRz2K2zxlQlSVqyzsSUUYOY4NdvfTo66fJumHM7QxQ9nfWizVwno2qEnAYFnVIffHX4B3pPUp6ySogahNFMWnbayLL251tHaoCZC3sqGeF2vZk3VpGf0f/OuDOKtdPO94o7dlqrDE5kQtq7JEFPRogX0B4nRIBSzJm/0bY6VYElo8mu2pKRd2OnwSU9ZUEdFkWKjnN7mi4fmpZcEoJhHCyN9EFRG3qyh6yyP+X+3ZP9HJVJaJbdQxCbK19IwVjfsJ1mLtvsxoOu7dztdGWKw==',
             'SigningCertURL': 'https://sns.us-west-2.amazonaws.com/SimpleNotificationService-f3ecfb7224c7233fe7bb5f59f96de52f.pem',
             'UnsubscribeURL': 'https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:123456789012:MyTopic:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55',
         }
-        self.body = {
-            'Message': 'HEJ 2',
-            'MessageId': '811d328f-b633-5fa3-aab4-6a0f4ab56f94',
-            'Signature': 'm8o/dG9QF1s86aj6mAdYk++OOe0J6yN+ZWpvRYiiQc8xrIGrOWpelaB/GMbn2XUnW6QfCtEi7RR5+YuNbJm60BILxqnlvnn0Nvjw1iT2VzLZAkIWw3g/dk9zOnlDK8vLksTwXidlQ24/DLc9cG5zfG8100/v4OMAU+1tkIaGcw95G9K3QX2I9zT99RUxvm6U04Xxzz1mUOAZ7JFw9m8xxwsIKbVWTaQsRQb6xj2Rtlb/Mpleke2TkcDCuJW7o3RmED6vpg2Ku3Tu75RunI4Dff+GSzbI+im4Yn9R9HEGJB0hAe3brrisjGVnsMYYsOW+XGIFuB5JOkvgGmtNQZW2wg==',
-            'SignatureVersion': '1',
-            'SigningCertURL': 'https://sns.eu-north-1.amazonaws.com/SimpleNotificationService-010a507c1833636cd94bdb98bd93083a.pem',
-            'Timestamp': '2021-01-19T15:27:02.064Z',
-            'TopicArn': 'arn:aws:sns:eu-north-1:075581119103:ft-test',
-            'Type': 'Notification',
-            'UnsubscribeURL': 'https://sns.eu-north-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-north-1:075581119103:ft-test:84d734c9-8872-4d86-bf4a-1b721758181d',
-        }
         self.client = TestClient(app)
 
-    def test_post_notification(self) -> None:
+    @mock.patch('requests.get')
+    def test_post_notification(self, mock_get: mock.Mock) -> None:
+        mock_get.return_value = MockResponse(content=self.cert_bytes)
+
         response = self.client.post('/message', data=json.dumps(self.body), headers=self.headers)
         assert response.status_code == 200
         assert response.ok is True
