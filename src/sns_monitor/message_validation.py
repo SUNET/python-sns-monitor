@@ -2,7 +2,7 @@
 import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
 import requests
 from cryptography import x509
@@ -23,6 +23,17 @@ class CachedCertificate:
     added: datetime
 
 
+# We should see if it is possible to validate the cert using a Amazon root cert
+# but not even Amazon seems to do that.
+# https://docs.aws.amazon.com/sns/latest/dg/sns-example-code-endpoint-java-servlet.html
+#
+# This validator checks the following:
+# - Type is SubscriptionConfirmation, UnsubscribeConfirmation or Notification
+# - SignatureVersion is 1
+# - SigningCertURL matches regex ^https://sns\.[-a-z0-9]+\.amazonaws\.com/
+# - Signature matches the key, value pairs of the plaintext signature (see _get_plaintext_to_sign)
+
+
 class CachedSNSMessageValidator(SNSMessageValidator):
     def __init__(self, cert_url_regex: Optional[str] = None, signature_version: Optional[str] = None):
         kwargs = {}
@@ -35,13 +46,15 @@ class CachedSNSMessageValidator(SNSMessageValidator):
 
     def _verify_signature(self, message: Dict[str, Any]) -> None:
         cert_url = message.get('SigningCertURL')
+        if not cert_url:
+            raise SignatureVerificationFailureException('SigningCertURL not found')
         cached_cert = self.cached_certificates.get(cert_url)
         if cached_cert:
             # TODO: Check when cert was added and invalidate old ones
             cert = cached_cert.cert
         else:
             try:
-                resp = requests.get(message.get('SigningCertURL'))
+                resp = requests.get(cert_url)
                 resp.raise_for_status()  # Raise HTTPError on error codes
                 pem = resp.content
             except requests.exceptions.HTTPError:
@@ -51,16 +64,16 @@ class CachedSNSMessageValidator(SNSMessageValidator):
 
         public_key = cert.public_key()
         plaintext = self._get_plaintext_to_sign(message).encode()
-        signature = base64.b64decode(message.get('Signature'))
+        b64_signature = message.get('Signature')
+        if not b64_signature:
+            raise SignatureVerificationFailureException('Signature not found')
+        signature = base64.b64decode(b64_signature)
         try:
             public_key.verify(
-                signature, plaintext, PKCS1v15(), SHA1(),
+                signature,
+                plaintext,
+                PKCS1v15(),
+                SHA1(),
             )
         except InvalidSignature:
             raise SignatureVerificationFailureException('Invalid signature.')
-
-    def validate_message(self, message: Dict[str, Any]) -> None:
-        self.validate_message_type(message.get('Type'))
-        self._validate_signature_version(message)
-        self._validate_cert_url(message)
-        self._verify_signature(message)

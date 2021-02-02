@@ -2,15 +2,16 @@
 import json
 import logging
 
-from fastapi import HTTPException
 from sns_message_validator import (
-    InvalidMessageTypeException,
     InvalidCertURLException,
+    InvalidMessageTypeException,
     InvalidSignatureVersionException,
     SignatureVerificationFailureException,
 )
+from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 from starlette.types import Message
 
 from sns_monitor.message_validation import CachedSNSMessageValidator
@@ -20,7 +21,7 @@ __author__ = 'lundberg'
 logger = logging.getLogger(__name__)
 
 
-# Hack to be able to get request body both here and then later
+# Hack to be able to get request body both now and later
 # https://github.com/encode/starlette/issues/495#issuecomment-513138055
 async def set_body(request: Request, body: bytes):
     async def receive() -> Message:
@@ -55,8 +56,9 @@ class VerifySNSMessageSignature(BaseHTTPMiddleware):
             ) as e:
                 logger.error(f'Message validation failed: {e}')
                 logger.debug(f'Headers: {request.headers}')
-                logger.debug(f'Body: {await request.body()}')
-                raise HTTPException(status_code=422, detail="Unprocessable Entity")
+                body = await get_body(request)
+                logger.debug(f'Body: {body.decode()}')
+                return PlainTextResponse('Unprocessable Entity', status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         response = await call_next(request)
         return response

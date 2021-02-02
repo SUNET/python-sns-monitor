@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI, HTTPException
 
 from sns_monitor.middleware import VerifySNSMessageSignature
-from sns_monitor.models import SNSMessage, MessageType
+from sns_monitor.models import MessageType, SNSMessage
 
 __author__ = 'lundberg'
 
