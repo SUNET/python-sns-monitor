@@ -7,7 +7,7 @@ from unittest import TestCase, mock
 import pkg_resources
 from starlette.testclient import TestClient
 
-from sns_monitor.api import app
+from sns_monitor.api import init_sns_monitor_api
 
 __author__ = 'lundberg'
 
@@ -32,9 +32,12 @@ class MockResponse:
 
 class TestApp(TestCase):
     def setUp(self) -> None:
+        self.config = {'app_name': 'test'}
+        # Load test cert
         self.datadir = pkg_resources.resource_filename(__name__, 'data')
         with open(f'{self.datadir}{os.sep}test.crt', mode='rb') as f:
             self.cert_bytes = f.read()
+
         # Headers and body from AWS documentation
         self.headers = {
             'x-amz-sns-message-type': 'Notification',
@@ -55,12 +58,15 @@ class TestApp(TestCase):
             'SigningCertURL': 'https://sns.us-west-2.amazonaws.com/SimpleNotificationService-f3ecfb7224c7233fe7bb5f59f96de52f.pem',
             'UnsubscribeURL': 'https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:123456789012:MyTopic:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55',
         }
-        self.client = TestClient(app)
+        # Initialize app
+        self.app = init_sns_monitor_api(test_config=self.config)
+        # Setup test client
+        self.client = TestClient(self.app)
 
     @mock.patch('requests.get')
     def test_post_notification(self, mock_get: mock.Mock) -> None:
         mock_get.return_value = MockResponse(content=self.cert_bytes)
 
-        response = self.client.post('/message', data=json.dumps(self.body), headers=self.headers)
+        response = self.client.post('/messages/', data=json.dumps(self.body), headers=self.headers)
         assert response.status_code == 200
         assert response.ok is True
