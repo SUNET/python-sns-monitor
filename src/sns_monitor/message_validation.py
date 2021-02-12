@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 import requests
@@ -11,6 +11,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.x509.base import Certificate
+from eduid_common.misc.timeutil import utc_now
 from sns_message_validator import SignatureVerificationFailureException
 from sns_message_validator.sns_message_validator import SNSMessageValidator
 
@@ -60,7 +61,7 @@ class CachedSNSMessageValidator(SNSMessageValidator):
             except requests.exceptions.HTTPError:
                 raise SignatureVerificationFailureException('Failed to fetch cert file.')
             cert = x509.load_pem_x509_certificate(pem, default_backend())
-            self.cached_certificates[cert_url] = CachedCertificate(cert=cert, added=datetime.now(timezone.utc))
+            self.cached_certificates[cert_url] = CachedCertificate(cert=cert, added=utc_now())
 
         public_key = cert.public_key()
         plaintext = self._get_plaintext_to_sign(message).encode()
@@ -70,10 +71,7 @@ class CachedSNSMessageValidator(SNSMessageValidator):
         signature = base64.b64decode(b64_signature)
         try:
             public_key.verify(
-                signature,
-                plaintext,
-                PKCS1v15(),
-                SHA1(),
+                signature, plaintext, PKCS1v15(), SHA1(),
             )
         except InvalidSignature:
             raise SignatureVerificationFailureException('Invalid signature.')
