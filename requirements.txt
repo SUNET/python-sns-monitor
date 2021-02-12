@@ -1,4 +1,4 @@
-fastapi
+fastapi==0.63.*
+sns-message-validator==0.0.*
+eduid-common[api]==0.32.*
 uvicorn[standard]
-sns-message-validator
-eduid-common[api]>=0.24.1
