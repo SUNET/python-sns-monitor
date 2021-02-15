@@ -70,3 +70,18 @@ class TestApp(TestCase):
         response = self.client.post('/messages/', data=json.dumps(self.body), headers=self.headers)
         assert response.status_code == 200
         assert response.ok is True
+
+    @mock.patch('requests.get')
+    def test_accept_notification(self, mock_get: mock.Mock) -> None:
+        mock_get.return_value = MockResponse(content=self.cert_bytes)
+        self.app.state.config.topic_allow_list = ['arn:aws:sns:us-west-2:123456789012:MyTopic']
+        response = self.client.post('/messages/', data=json.dumps(self.body), headers=self.headers)
+        assert response.status_code == 200
+        assert response.ok is True
+
+    @mock.patch('requests.get')
+    def test_reject_notification(self, mock_get: mock.Mock) -> None:
+        mock_get.return_value = MockResponse(content=self.cert_bytes)
+        self.app.state.config.topic_allow_list = ['some_other_topic']
+        response = self.client.post('/messages/', data=json.dumps(self.body), headers=self.headers)
+        assert response.status_code == 400

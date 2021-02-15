@@ -2,15 +2,16 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from sns_monitor.dependencies import verify_topic
 from sns_monitor.models import MessageType, SNSMessage
 
 __author__ = 'lundberg'
 
 logger = logging.getLogger(__name__)
 
-message_log_router = APIRouter(prefix='/messages')
+message_log_router = APIRouter(prefix='/messages', dependencies=[Depends(verify_topic)])
 
 
 async def handle_subscription_confirmation(message: SNSMessage):
