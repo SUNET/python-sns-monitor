@@ -12,7 +12,7 @@ from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse
-from starlette.types import Message
+from starlette.types import ASGIApp, Message
 
 from sns_monitor.message_validation import CachedSNSMessageValidator
 
@@ -37,9 +37,9 @@ async def get_body(request: Request) -> bytes:
 
 
 class VerifySNSMessageSignature(BaseHTTPMiddleware):
-    def __init__(self, app):
+    def __init__(self, app: ASGIApp, cert_cache_seconds: int):
         super().__init__(app)
-        self.message_validator = CachedSNSMessageValidator()
+        self.message_validator = CachedSNSMessageValidator(cert_cache_seconds=cert_cache_seconds)
 
     async def dispatch(self, request: Request, call_next):
         # Verify message signature when we have the raw body to work with

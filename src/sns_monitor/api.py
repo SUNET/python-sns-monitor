@@ -27,5 +27,5 @@ def init_sns_monitor_api(name: str = 'sns_monitor', test_config: Optional[Mappin
     config = load_config(typ=SNSMonitorConfig, app_name=name, ns='api', test_config=test_config)
     app = SNSMonitor(config=config)
     app.include_router(message_log_router)
-    app.add_middleware(VerifySNSMessageSignature)
+    app.add_middleware(VerifySNSMessageSignature, cert_cache_seconds=config.cert_cache_seconds)
     return app
