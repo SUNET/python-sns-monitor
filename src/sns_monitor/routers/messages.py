@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.openapi.models import Response
 
 from sns_monitor.dependencies import verify_topic
 from sns_monitor.models import MessageType, SNSMessage
@@ -21,7 +22,6 @@ async def handle_subscription_confirmation(message: SNSMessage):
     logger.info(message.message)
     logger.info(f'Subscribe URL: {message.subscribe_url}')
     logger.info('****************************************')
-    return 200, 'OK'
 
 
 async def handle_unsubscribe_confirmation(message: SNSMessage):
@@ -30,7 +30,6 @@ async def handle_unsubscribe_confirmation(message: SNSMessage):
     logger.info(f'Subject: {message.subject}')
     logger.info(message.message)
     logger.info('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-    return 200, 'OK'
 
 
 async def handle_notification(message: SNSMessage):
@@ -41,16 +40,16 @@ async def handle_notification(message: SNSMessage):
     logger.info(f'Subject: {message.subject}')
     logger.info(message.message)
     logger.info('----------------------------------------')
-    return 200, 'OK'
 
 
-@message_log_router.post('/')
+@message_log_router.post('/', status_code=200)
 async def receive_message(message: SNSMessage):
     if message.type is MessageType.NOTIFICATION:
-        return await handle_notification(message=message)
+        await handle_notification(message=message)
     elif message.type is MessageType.SUBSCRIPTION_CONFIRMATION:
-        return await handle_subscription_confirmation(message=message)
+        await handle_subscription_confirmation(message=message)
     elif message.type is MessageType.UNSUBSCRIBE_CONFIRMATION:
-        return await handle_unsubscribe_confirmation(message=message)
-    logger.error(f'Unhandled message type {message.type} received')
-    raise HTTPException(status_code=422, detail="Unprocessable Entity")
+        await handle_unsubscribe_confirmation(message=message)
+    else:
+        logger.error(f'Unhandled message type {message.type} received')
+        raise HTTPException(status_code=422, detail="Unprocessable Entity")

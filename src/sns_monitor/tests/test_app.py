@@ -85,3 +85,8 @@ class TestApp(TestCase):
         self.app.state.config.topic_allow_list = ['some_other_topic']
         response = self.client.post('/messages/', data=json.dumps(self.body), headers=self.headers)
         assert response.status_code == 400
+
+    def test_status_healthy(self) -> None:
+        response = self.client.get('/status/healthy')
+        assert response.status_code == 200
+        assert response.json() == {'message': 'STATUS_OK'}
