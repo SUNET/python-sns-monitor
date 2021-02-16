@@ -10,7 +10,7 @@ RUN /opt/eduid/bin/pip install --index-url https://pypi.sunet.se -r /opt/eduid/p
 
 COPY docker/start.sh /
 
-EXPOSE "8000"
-HEALTHCHECK --interval=27s CMD curl http://localhost:8000/status/healthy | grep -q STATUS_OK
+EXPOSE "8080"
+HEALTHCHECK --interval=27s CMD curl http://localhost:8080/status/healthy | grep -q STATUS_OK
 
 CMD [ "/start.sh" ]

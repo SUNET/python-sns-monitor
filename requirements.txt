@@ -2,3 +2,4 @@ fastapi==0.63.*
 sns-message-validator==0.0.*
 eduid-common[api]==0.32.*
 uvicorn[standard]
+gunicorn
