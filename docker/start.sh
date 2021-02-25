@@ -7,6 +7,7 @@ set -x
 
 # These could be set from Puppet if multiple instances are deployed
 eduid_name=${eduid_name-'python-sns-monitor'}
+app_name=${app_name-'sns_monitor'}
 base_dir=${base_dir-"/opt/eduid/${eduid_name}"}
 project_dir=${project_dir-"${base_dir}/src"}
 # These *can* be set from Puppet, but are less expected to...
