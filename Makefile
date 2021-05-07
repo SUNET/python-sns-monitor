@@ -1,5 +1,6 @@
 SOURCE=	src
 EDUIDCOMMON= ../eduid-common/src
+PIPCOMPILE=pip-compile -v --upgrade --generate-hashes --index-url https://pypi.sunet.se/simple
 
 test:
 	pytest --log-cli-level DEBUG
@@ -14,3 +15,10 @@ typecheck:
 typecheck_extra:
 	mypy --ignore-missing-imports $(EDUIDCOMMON) $(SOURCE)
 
+update_deps: requirements.txt $(patsubst %_requirements.in,%_requirements.txt,$(wildcard *_requirements.in))
+
+requirements.txt: requirements.in
+	CUSTOM_COMPILE_COMMAND="make update_deps" $(PIPCOMPILE) requirements.in
+
+%_requirements.txt: %_requirements.in
+	CUSTOM_COMPILE_COMMAND="make update_deps" $(PIPCOMPILE) $<

@@ -1,0 +1,5 @@
+fastapi
+sns-message-validator
+uvicorn[standard]
+gunicorn
+pynacl
