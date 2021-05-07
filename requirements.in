@@ -4,3 +4,6 @@ sns-message-validator
 uvicorn[standard]
 gunicorn
 pynacl
+
+# sub dependencies that needs a hash
+importlib-metadata
