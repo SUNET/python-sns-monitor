@@ -33,7 +33,7 @@ DEFAULT_FORMAT = '{asctime} | {levelname:7} | {hostname} | {eppn:11} | {name:35}
 
 
 # Default to RFC3339/ISO 8601 with tz
-class EduidFormatter(logging.Formatter):
+class TimestampFormatter(logging.Formatter):
     def __init__(self, relative_time: bool = False, fmt=None):
         super().__init__(fmt=fmt, style='{')
         self._relative_time = relative_time
@@ -175,11 +175,6 @@ class LocalContext(BaseModel):
     filters: Sequence[LoggingFilters] = []  # filters to activate
     relative_time: bool = False  # use relative time as {asctime}
 
-    # def to_dict(self) -> Dict[str, Any]:
-    #    res = asdict(self)
-    #    res['level'] = logging.getLevelName(self.level)
-    #    return res
-
 
 def make_local_context(config: LoggingConfigMixin) -> LocalContext:
     """
@@ -224,20 +219,20 @@ def make_dictConfig(local_context: LocalContext) -> Dict[str, Any]:
 
     _available_filters = {
         # A filter that adds various hostname/container name information to the log records
-        LoggingFilters.NAMES: {'()': 'eduid_common.api.logging.AppFilter', 'app_name': 'cfg://local_context.app_name',},
+        LoggingFilters.NAMES: {'()': 'sns_monitor.logging.AppFilter', 'app_name': 'cfg://local_context.app_name',},
         # Only log debug messages if Flask app.debug is False
         LoggingFilters.DEBUG_FALSE: {
-            '()': 'eduid_common.api.logging.RequireDebugFalse',
+            '()': 'sns_monitor.logging.RequireDebugFalse',
             'app_debug': 'cfg://local_context.app_debug',
         },
         # Only log debug messages if Flask app.debug is True
         LoggingFilters.DEBUG_TRUE: {
-            '()': 'eduid_common.api.logging.RequireDebugTrue',
+            '()': 'sns_monitor.logging.RequireDebugTrue',
             'app_debug': 'cfg://local_context.app_debug',
         },
         # A filter that adds relative time to the log records
         LoggingFilters.SESSION_USER: {
-            '()': 'eduid_common.api.logging.UserFilter',
+            '()': 'sns_monitor.logging.UserFilter',
             'debug_eppns': 'cfg://local_context.debug_eppns',
         },
     }
@@ -255,7 +250,7 @@ def make_dictConfig(local_context: LocalContext) -> Dict[str, Any]:
         # Formatters
         'formatters': {
             'default': {
-                '()': 'eduid_common.api.logging.EduidFormatter',
+                '()': 'sns_monitor.logging.TimestampFormatter',
                 'relative_time': 'cfg://local_context.relative_time',
                 'fmt': 'cfg://local_context.format',
             },
