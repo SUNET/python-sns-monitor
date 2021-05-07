@@ -11,9 +11,10 @@ from cryptography.hazmat.backends.openssl.rsa import _RSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.x509 import Certificate, load_pem_x509_certificate
-from eduid_common.misc.timeutil import utc_now
 from sns_message_validator import SignatureVerificationFailureException
 from sns_message_validator.sns_message_validator import SNSMessageValidator
+
+from sns_monitor.utils import utc_now
 
 __author__ = 'lundberg'
 

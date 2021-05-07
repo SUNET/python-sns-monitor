@@ -2,11 +2,10 @@
 import logging
 from typing import Any, Mapping, Optional
 
-from eduid_common.api.logging import init_logging
-from eduid_common.config.parsers import load_config
 from fastapi import FastAPI
 
-from sns_monitor.config import SNSMonitorConfig
+from sns_monitor.config import SNSMonitorConfig, load_config
+from sns_monitor.logging import init_logging
 from sns_monitor.middleware import VerifySNSMessageSignature
 from sns_monitor.routers.messages import message_log_router
 from sns_monitor.routers.status import status_router
