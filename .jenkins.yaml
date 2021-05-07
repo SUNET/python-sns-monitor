@@ -1,11 +1,11 @@
 builders:
   - script
-upstream:
-  - eduid-common
 triggers:
   cron: "@weekly"
 slack:
   room: "eduid-builds"
+pre_build_script:
+  - "apt-get install -y libffi-dev"
 script:
   - "python3.7 -m venv venv"
   - ". venv/bin/activate"
