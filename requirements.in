@@ -1,3 +1,4 @@
+-c constraints.txt
 fastapi
 sns-message-validator
 uvicorn[standard]
