@@ -13,7 +13,6 @@ script:
   - "pip install --index-url https://pypi.sunet.se -r test_requirements.txt"
   - "pip freeze"
   - "make test"
-  - "make typecheck"
 clean_workspace: true
 
 extra_jobs:
